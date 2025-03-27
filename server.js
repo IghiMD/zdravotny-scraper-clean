@@ -2,7 +2,7 @@ const express = require('express');
 const puppeteer = require('puppeteer');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 app.get('/zdravotnickydenik', async (req, res) => {
   try {
@@ -13,12 +13,15 @@ app.get('/zdravotnickydenik', async (req, res) => {
 
     const page = await browser.newPage();
     await page.goto('https://zdravotnickydenik.cz/kategorie/zpravy/', {
-      waitUntil: 'domcontentloaded',
+      waitUntil: 'networkidle2',
       timeout: 0
     });
 
+    // Počkáme, kým sa články zobrazia
+    await page.waitForSelector('h2.post-title a', { timeout: 5000 });
+
     const articles = await page.evaluate(() => {
-      const nodes = document.querySelectorAll('article h3 a');
+      const nodes = document.querySelectorAll('h2.post-title a');
       return Array.from(nodes).map(node => ({
         title: node.innerText.trim(),
         url: node.href
