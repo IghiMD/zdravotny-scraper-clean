@@ -17,13 +17,20 @@ app.get('/zdravotnickydenik', async (req, res) => {
       timeout: 0
     });
 
-    // Počkám 5 sekúnd navyše, aby sa načítal JS
-    await page.waitForTimeout(5000);
+    // Extra čakanie pre istotu
+    await page.waitForTimeout(3000);
+    await page.waitForSelector('h3.entry-title a');
 
-    const html = await page.content();
+    const articles = await page.evaluate(() => {
+      const nodes = document.querySelectorAll('h3.entry-title a');
+      return Array.from(nodes).map(node => ({
+        title: node.innerText.trim(),
+        url: node.href
+      }));
+    });
 
-    // Pošli späť len výrez HTML (kvôli limitu)
-    res.send(html.slice(0, 3000) + "\n\n...skrátené...");
+    await browser.close();
+    res.json({ source: 'zdravotnickydenik', count: articles.length, articles });
   } catch (error) {
     res.status(500).json({ error: 'Scraping failed', details: error.toString() });
   }
